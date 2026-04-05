@@ -13,7 +13,6 @@
 
 - There are 4 initial namespaces: default, kube-system, kube-node-lease, kube-public
 - 🚨 By default, namespaces DO NOT act as a network/security boundary
- 
 
 ```yaml
 apiVersion: v1
@@ -31,7 +30,7 @@ kubectl create namespace ameer-ns
 ```
 
 ```bash
-kubectl get namespace 
+kubectl get namespace
 ```
 
 ```cmd
@@ -46,14 +45,13 @@ kube-system       Active   29d
 
 ---
 
-
 ### creating namespace using yml
 
 ```yml
 apiVersion: v1
 kind: Namespace
-metadata: 
-    name: ameer-ns
+metadata:
+  name: ameer-ns
 ```
 
 ```cmd
@@ -61,7 +59,7 @@ kubectl apply -f namespace.yml
 ```
 
 ```cmd
-kubectl get namespace 
+kubectl get namespace
 ```
 
 ```cmd
@@ -106,7 +104,7 @@ spec:
       image: nginx:1.26.0
 ```
 
-## Pod 
+## Pod
 
 ```cmd
 ┌─────────────────────────────────────────────────────┐
@@ -124,6 +122,7 @@ spec:
 │                                                      │
 └─────────────────────────────────────────────────────┘
 ```
+
 - A Pod can contain multiple containers
 
 - Containers within a pod share networking and storage
@@ -138,3 +137,159 @@ spec:
   - Environment variables
   - Volumes
   - DNS Policies
+
+---
+
+## Aside: kubectl intro
+
+```bash
+kubectl <VERB> <NOUN> -n <NAMESPACE> -o <FORMAT>
+```
+
+```bash
+alias k=kubectl
+kubectx
+kubens
+```
+
+```bash
+k get pods -n 04-pod
+k get pods -A # (--all-namespaces)
+k get pods -l key=value
+```
+
+```bash
+k explain <NOUN>.path.to.field
+k explain pod.spec.containers.image
+```
+
+```bash
+k logs <POD_NAME>
+k logs deployment/<DEPLOYMENT_NAME>
+```
+
+```bash
+k exec -it <POD_NAME> -c <CONTAINER_NAME> -- bash
+k debug -it <POD_NAME> --image=<DEBUG_IMAGE> -- bash
+```
+
+```bash
+k port-forward <POD_NAME> <LOCAL_PORT>:<POD_PORT>
+k port-forward svc/<DEPLOYMENT_NAME> <LOCAL_PORT>:<POD_PORT>
+```
+
+---
+
+### Creating a Pod
+
+```yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lisa-node
+spec:
+  containers:
+    - name: lisa-node-container
+      image: itisameerkhan/lisa-node:v1
+```
+
+```cmd
+kubectl apply -f pod.yml
+```
+
+---
+
+```cmd
+kubectl get pods
+```
+
+```cmd
+NAME        READY   STATUS    RESTARTS   AGE
+lisa-node   1/1     Running   0          5s
+```
+
+---
+
+### Better version of creating a Pod
+
+```yml
+apiVersion: v1
+kind: Pod 
+metadata: 
+  name: lisa-node
+  namespace: ameer-ns
+spec: 
+  containers:
+    - name: lisa-node-container
+      image: itisameerkhan/lisa-node:v5
+      ports:  
+        - containerPort: 8080
+          protocol: TCP 
+      readinessProbe: 
+        httpGet: 
+          path: / 
+          port: 8080
+      resources: 
+        limits:
+          memory: "200Mi"
+        requests: 
+          memory: "200Mi" 
+          cpu: "250m"
+      securityContext: 
+        allowPrivilegeEscalation: false 
+        privileged: false
+  securityContext:
+    seccompProfile: 
+      type: RuntimeDefault
+    runAsUser: 1001
+    runAsGroup: 1001
+    runAsNonRoot: true
+```
+
+```json
+{
+  "success": true,
+  "message": "server status ok 😍",
+  "version": "v5",
+  "hostname": "lisa-node",
+  "time": "05 Apr 2026, 12:00:14 pm",
+  "platform": "linux",
+  "memory": {
+    "rss": "73.48 MB",
+    "heapTotal": "9.59 MB",
+    "heapUsed": "8.09 MB",
+    "external": "2.15 MB"
+  },
+  "system": {
+    "userId": 1001,
+    "groupId": 1001,
+    "isRoot": false,
+    "cpuCores": 12,
+    "totalMemoryMB": "7571.20 MB",
+    "freeMemoryMB": "5664.23 MB"
+  },
+  "arch": "x64",
+  "uptimeSeconds": "205.10",
+  "uptimeMinutes": "3.42 min",
+  "secret": "no secret found",
+  "port": 8080
+}
+```
+
+> ![NOTE]
+> deleting a namespace also deletes a pod inside it
+
+
+### creating a namespace 
+
+```cmd
+kubectl create namespace ameer-ns
+```
+
+```cmd
+kubectl get pods --namespace=ameer-ns
+```
+
+```cmd
+kubectl delete namespace ameer-ns
+```
