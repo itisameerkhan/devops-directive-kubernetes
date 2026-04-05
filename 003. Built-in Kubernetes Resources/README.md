@@ -276,7 +276,7 @@ spec:
 }
 ```
 
-> ![NOTE]
+> [!NOTE]
 > deleting a namespace also deletes a pod inside it
 
 
