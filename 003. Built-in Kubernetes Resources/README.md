@@ -293,3 +293,189 @@ kubectl get pods --namespace=ameer-ns
 ```cmd
 kubectl delete namespace ameer-ns
 ```
+
+---
+
+## ReplicaSet
+
+- Maintains a stable set of replica Pods running at any given time.
+- Often used to guarantee the availability of a specified number of identical Pods.
+- 🚨 You will rarely create a ReplicaSet directly; instead, you will use a Deployment, which manages ReplicaSets for you.
+
+```cmd
+┌─────────────────────────────────────────────────────┐
+│ ReplicaSet                                          │
+│                                                     │
+│   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐│
+│   │              │ │              │ │              ││
+│   │     Pod      │ │     Pod      │ │     Pod      ││
+│   │              │ │              │ │              ││
+│   └──────────────┘ └──────────────┘ └──────────────┘│
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+### creating a replicaset 
+
+```yml
+apiVersion: apps/v1
+kind: ReplicaSet 
+metadata: 
+  name: lisa-node-rs
+spec: 
+  replicas: 3
+  selector:
+    matchLabels: 
+      app: lisa-node 
+  template:
+    metadata:
+      labels:
+        app: lisa-node
+    spec: 
+      containers:
+        - name: lisa-node-container
+          image: itisameerkhan/lisa-node:v5
+          ports:  
+            - containerPort: 8080
+              protocol: TCP
+```
+
+```cmd
+kubectl apply -f pod.yml
+```
+
+```cmd
+kubectl get pods 
+```
+
+```cmd
+NAME                 READY   STATUS    RESTARTS   AGE
+lisa-node-rs-799zs   1/1     Running   0          32s
+lisa-node-rs-9xkx2   1/1     Running   0          32s
+lisa-node-rs-qqpp7   1/1     Running   0          32s
+```
+
+```cmd
+kubectl get replicaset
+```
+
+```cmd
+NAME           DESIRED   CURRENT   READY   AGE
+lisa-node-rs   3         3         3       2m6s
+```
+
+---
+
+## Deployment
+
+- Provides declarative updates for Pods and ReplicaSets.
+- It is the most common way to deploy stateless applications.
+- Enables easy rolling updates, rollbacks, and scaling.
+
+```cmd
+┌─────────────────────────────────────────────────────────────┐
+│ Deployment                                                  │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │ ReplicaSet (Current)                                │   │
+│   │                                                     │   │
+│   │   ┌──────────────┐ ┌──────────────┐ ┌──────────────┐│   │
+│   │   │     Pod      │ │     Pod      │ │     Pod      ││   │
+│   │   └──────────────┘ └──────────────┘ └──────────────┘│   │
+│   └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │ ReplicaSet (Old / Rolled Back)                      │   │
+│   │                                                     │   │
+│   └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### creating a deployment 
+
+```yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lisa-node-deployment
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: lisa-node
+  template:
+    metadata:
+      labels:
+        app: lisa-node
+    spec:
+      containers:
+        - name: lisa-node-container
+          image: itisameerkhan/lisa-node:v4
+          ports:
+            - containerPort: 8080
+```
+
+---
+
+## Service
+
+- Serves as an internal load balancer across replicas
+- Uses pod labels to determine which pods to serve
+- Types:
+  - **ClusterIP:** Internal to cluster
+  - **NodePort:** Listens on each node in cluster
+  - **LoadBalancer:** Provisions external load balancer
+
+### ClusterIP
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-clusterip
+spec:
+  type: ClusterIP # Default
+  selector:
+    app: nginx-pod-label
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+
+### NodePort
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-nodeport
+spec:
+  type: NodePort
+  selector:
+    app: nginx-pod-label
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      # nodePort: 30XXX
+```
+
+### LoadBalancer
+
+```yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-loadbalancer
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx-pod-label
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
